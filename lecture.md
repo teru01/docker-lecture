@@ -33,12 +33,15 @@ style: |
 
 - コンテナ型仮想環境の構築・管理ツール
 - コンテナ型仮想化って？
-  - 「コンテナ」という独立した区画で仮想環境を作る技術
-  - VMほどしっかりと分離されていないよ
+  - 「コンテナ」という独立した区画を作成し，そこで仮想環境を作る技術
+  - VMほどしっかりと分離されていない
+
+VM: ホストOSからは別のマシンとして見える
+コンテナ: ホストOSからはプロセスとして見える
 
 ---
 
-# 使えばわかる
+# とりあえず使ってみよう
 
 ```
 (vm)$ sudo docker run -p 8080:80 nginx:1.17-alpine
@@ -105,7 +108,7 @@ nginx               1.17-alpine         48c8a7c47625        5 weeks ago         
 
 ---
 
-# バックグラウンドでコンテナを起動
+# コンテナを起動
 
 ```
 $ sudo docker run -d -p 8080:80 --name myserver nginx:1.17-alpine
@@ -126,30 +129,34 @@ CONTAINER ID        IMAGE               COMMAND                  CREATED        
 
 # コンテナに入ろう
 
-コンテナの中ではホストとは別のOSが動作し，その上でnginxが起動しています．
 
-コンテナ内部に入ってみよう．VMにログインするのとやってることは同じ．
+
+コンテナ内部に入ってみよう．
 
 ```
 $ sudo docker container exec -it myserver sh
 / #
 ```
 
+コンテナ内部の`/`(ファイルシステムルート)に移動しました．
+ホストOSとはファイルシステムが分離されているのがわかります．
+
 ---
 
-# コンテナ内部のOSは？
+# コンテナ内部のOS？
 
 ```
-(container)/ # cat /etc/os-release 
+(container)/ # cat /etc/os-release
 NAME="Alpine Linux"
 ID=alpine
 VERSION_ID=3.10.4
-PRETTY_NAME="Alpine Linux v3.10"
-HOME_URL="https://alpinelinux.org/"
-BUG_REPORT_URL="https://bugs.alpinelinux.org/"
+...
 ```
 
-Alpine Linuxです．とっても小さなLinuxディストリビューションで，よくDockerイメージに利用されます
+Alpine Linuxは非常に小さなLinuxディストリビューションで，よくDockerイメージに利用されます．
+
+コンテナ内部でホストとは別のOSが動いているように見えますが，実際はそのように見せかけているだけです．
+参考: https://qiita.com/kirikunix/items/33414240b4cacee362da
 
 ---
 
@@ -185,10 +192,6 @@ $ sudo docker run -d -p 8081:80 --name myserver2 nginx:1.17-alpine
 
 `localhost:8080`と`localhost:8081`を見比べてみよう
 
-- myserver
-  - 8080(VMのポート):80(コンテナ内部のポート)
-- myserver2
-  - 8081:80
 
 ---
 
@@ -216,8 +219,10 @@ $ sudo docker run -d -p 8081:80 --name myserver2 nginx:1.17-alpine
 
 # 今更だけど今日のシステム構成
 
-- DockerをVagrant VM (Ubuntu Xenial)上で動かしている
+- DockerをVM (Ubuntu Xenial)上で動かしている
   - DockerはLinux上の方が良い感じに動くので
+  - 厳密にはLinux*でしか*動かない
+- Vagrant: Virtualboxのような仮想化ソフト（ハイパバイザ）の構成ツール
 - Vagrantfileにポート転送の設定を書いてるのでホストから疎通できるようになってます
 
 ---
@@ -227,15 +232,19 @@ $ sudo docker run -d -p 8081:80 --name myserver2 nginx:1.17-alpine
 - コンテナをいじるのが良くないことがわかった
 - じゃあ，イメージごといじれば良い！
 
+## 作り方
+- Dockerfileを書いてビルドする
+- コンテナから生成する
+
 ---
 
 # Dockerfile
 
 - イメージの設計図
 - 記述すること
-  - ベースにしたいイメージ(FROM)
-  - **イメージ作成時**に実行したいコマンド(RUN)
-  - **コンテナ実行時**に実行したいコマンド(CMD)
+  - ベースにしたいイメージ
+  - イメージ作成時に実行したいコマンド
+  - コンテナ実行時に実行したいコマンド
 などなど
 
 ---
@@ -246,13 +255,34 @@ VMの`/vagrant/hello-dockerfile/Dockerfile`をみてみよう
 
 ```
 FROM nginx:1.17-alpine
+```
+
+FROM: ベースとなるイメージを指定
+
+```
 COPY ./nginx.conf /etc/nginx/nginx.conf
+```
+
+COPY: ホストのファイルをコンテナへコピー
+
+---
+
+```
 RUN set -x &&\
     apk --update add openssl &&\
     ...(omitted)
     chmod 400 /etc/nginx/server_private.key
+```
+
+RUN: **イメージ作成時**に実行するコマンド
+ここで生成したファイルなどはイメージに含まれる
+
+
+```
 CMD ["nginx", "-g", "daemon off;"]
 ```
+
+CMD: **コンテナ起動時**に実行するコマンド
 
 ---
 
@@ -260,18 +290,48 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ```
 $ cd /vagrant/hello-dockerfile
-$ sudo docker build -t hoge/myserver .
+$ sudo docker build -t hoge/myserver:1.0 .
 ```
 
-Dockerfileの"RUN"で指定したコマンドが走りました．
-続いてコンテナ起動．これはさっきと同様
+タグは[Dockerhubのユーザー名]/イメージ名:バージョン で作るのが普通
+
+Dockerfileの"RUN"で指定したコマンドが走りました．できたイメージを`$ sudo docker images`で確認してみよう
+
+---
+
+# コンテナ起動
+
+これはさっきと同様
 
 ```
-$ sudo docker run -d -p 4443:443 --name https-server hoge/myserver
+$ sudo docker run -d -p 4443:443 --name https-server hoge/myserver:1.0
+```
+
+警告画面が出たら"thisisunsafe"とタイプする
+
+---
+
+# Dockerhub
+
+- dockerイメージがたくさんアップロードされてる
+
+![10%](dockerhub.png)
+
+---
+
+# 実際， Dockerはどういうところで使うのか?
+
+- ここまでで基礎は大体OK
+- 使われ方をいくつか紹介
+
+
+---
+
+# ユースケース1: Linuxでしか動かない
+
+```
+docker run --rm -v $(pwd):/work nuitsjp/mdview ./work/local_build.sh
 ```
 
 ---
 
-
-
----
