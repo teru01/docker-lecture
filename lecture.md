@@ -317,7 +317,7 @@ $ sudo docker run -d -p 4443:443 --name https-server hoge/myserver:1.0
 
 - dockerイメージがたくさんアップロードされてる
 
-![10%](dockerhub.png)
+![60%](dockerhub.png)
 
 ---
 
@@ -334,6 +334,12 @@ RUN apk --update add sl
 
 ---
 
+# multi stage build
+
+
+
+---
+
 # 実際， Dockerはどういうところで使うのか?
 
 - ここまでで基礎は大体OK
@@ -345,12 +351,12 @@ RUN apk --update add sl
 # ユースケース1: 実行環境を使いたい
 
 - 環境構築がめんどくさいツールを使う時，誰かがDockerhubにイメージをUPしていることがある
-  - ただし，安易にイメージを信頼するのはセキュリティ上ダメ
+  - ただし，安易にイメージを信頼するのはセキュリティ上良くない
 
 
 ```
 $ cd bookmaker
-$ docker run --rm -v $(pwd):/work nuitsjp/mdview ./work/build.sh
+$ sudo docker run --rm -v `pwd`:/work nuitsjp/mdview ./work/build.sh
 ```
 
 -v: ホストのディレクトリをコンテナにマウント
@@ -358,14 +364,22 @@ $ docker run --rm -v $(pwd):/work nuitsjp/mdview ./work/build.sh
 
 ---
 
-
+![bg 80%](docker.png)
 
 ---
 
-# ユースケース2: ホストの環境を汚したくない
+# ユースケース2
+
+- jupyter notebook
+  - ブラウザで実行できるPythonのREPL環境
+  - データサイエンスやMLの人が良く使う
 
 ```
 $ sudo docker run --rm -p 8080:8888 -v `pwd`:/home/jovyan/work jupyter/base-notebook
 ```
+
+---
+
+# ユースケース3: web
 
 ---
