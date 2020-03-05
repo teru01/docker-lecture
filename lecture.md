@@ -334,9 +334,60 @@ RUN apk --update add sl
 
 ---
 
-# multi stage build
+# multi stage build（1/2）
+
+go/Dockerfile
+
+```
+# ビルド用のイメージ
+FROM golang:1.14-alpine as builder
+WORKDIR /go/src/app
+COPY ./main.go .
+RUN GOOS=linux GOARCH=amd64 go build -o /go/bin/app
+
+# 実行用のイメージ
+FROM alpine:3.11
+COPY --from=builder /go/bin/app /go/bin/app
+RUN addgroup --system myapp &&\
+    adduser --no-create-home --disabled-password --system --ingroup myapp myapp
+USER myapp
+ENTRYPOINT [ "/go/bin/app" ]
+```
+
+---
+
+# multi stage build（2/2）
+
+```
+FROM golang:1.14-alpine as builder
+...
+COPY --from=builder /go/bin/app /go/bin/app
+```
+
+コンパイルさえできれば後は処理系が必要ない場合に使う
+(例: golang, C++, Rust, webpack)
 
 
+
+ビルド用と実行用のイメージを分離できる
+
+```
+$ sudo docker images | awk '{print $1 ":" $7}' | grep go
+hoge/goapp:13.1MB  # こちらだけサーバにデプロイすればOK
+golang:369MB       # これはもう必要ない
+```
+
+---
+
+おまけ
+
+```
+RUN addgroup --system myapp &&\
+    adduser --no-create-home --disabled-password --system --ingroup myapp myapp
+USER myapp
+```
+
+`CMD`や`ENTRYPOINT`は基本的に実行ユーザーがrootになる
 
 ---
 
