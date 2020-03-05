@@ -144,7 +144,7 @@ $ sudo docker container exec -it myserver sh
 
 ---
 
-# コンテナ内部のOS？
+# コンテナ内部のOS..？
 
 ```
 (container)/ # cat /etc/os-release
@@ -387,7 +387,12 @@ RUN addgroup --system myapp &&\
 USER myapp
 ```
 
-`CMD`や`ENTRYPOINT`は基本的に実行ユーザーがrootになる
+- `CMD`や`ENTRYPOINT`: 指定したコマンドは実行ユーザがroot
+    - セキュリティ上良くない
+- USER
+  - 実行ユーザを変更
+  - システムユーザを作成して実行している
+
 
 ---
 
@@ -432,5 +437,20 @@ $ sudo docker run --rm -p 8080:8888 -v `pwd`:/home/jovyan/work jupyter/base-note
 ---
 
 # ユースケース3: web
+
+web開発では複数のコンテナを動かしたいことがほとんど（1サービス1コンテナが原則）
+
+- フロントエンド用サーバ
+- アプリケーションサーバ
+- DB
+
+=> docker-composeを使う
+
+---
+
+# docker-compose
+
+- 複数のコンテナをまとめて管理するツール
+
 
 ---

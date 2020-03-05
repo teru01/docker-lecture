@@ -1,0 +1,32 @@
+version: '3'
+services:
+    server:
+        build: ./server
+        container_name: server
+        ports:
+            - 8080:8080
+        depends_on:
+            - db
+        restart: always
+        environment:
+            # DB接続に使う情報
+            - MYSQL_DATABASE=myapp
+            - MYSQL_HOST=db
+            - MYSQL_ROOT_PASSWORD=mysql
+
+    db:
+        build: ./db
+        container_name: db
+        expose:
+            - 3306
+        volumes:
+            - db-store:/var/lib/mysql
+        environment:
+            # ここでDBのパスワードなどを設定
+            - MYSQL_DATABASE=myapp
+            - MYSQL_USER=mysql
+            - MYSQL_PASSWORD=mysql
+            - MYSQL_ROOT_PASSWORD=mysql
+            - TZ=Asia/Tokyo
+volumes:
+    db-store:
