@@ -452,5 +452,61 @@ web開発では複数のコンテナを動かしたいことがほとんど（1�
 
 - 複数のコンテナをまとめて管理するツール
 
+/web/docker-compose.yamlを見てみよう
 
 ---
+
+```
+version: '3'
+services:
+    server:
+        ...
+
+    db:
+        ...
+        volumes:
+            - db-store:/var/lib/mysql
+        ...
+volumes:
+    db-store:
+
+```
+
+db-storeはホストのディレクトリになる. 実体は`/var/lib/docker/volumes/web_db-store/_data`にある
+
+---
+
+# server
+
+```
+└── server
+    ├── Dockerfile        # 開発用Dockerfile
+    ├── Dockerfile.prod   # 本番用Dockerfile
+    ├── main.go
+    └── tmp
+```
+
+- 開発用: ファイルの変更をウォッチして自動ビルド
+- 本番用: ビルドするだけ
+
+---
+
+# compose起動
+
+```
+$ sudo docker-compose up -d
+```
+
+`$ sudo docker images` や `$ sudo docker-compose ps`で確認してみよう
+
+コンテナを削除して，再起動してみよう．DBのデータはどうなりますか？
+
+---
+
+# まとめ
+
+- イメージからコンテナを（複数）生成できる
+- コンテナに変更を加える事は普通しない
+- イメージをDockerfileから作って共有しよう
+- docker composeを使って複数コンテナ管理
+- さあ，次は君の番！
