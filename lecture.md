@@ -327,11 +327,30 @@ $ sudo docker run -d -p 4443:443 --name https-server hoge/myserver:1.0
 
 ---
 
-# ユースケース1: Linuxでしか動かない
+# ユースケース1: 実行環境を使いたい
+
+- 環境構築がめんどくさいツールを使う時，誰かがDockerhubにイメージをUPしていることがある
+  - ただし，安易にイメージを信頼するのはセキュリティ上ダメ
+
 
 ```
-docker run --rm -v $(pwd):/work nuitsjp/mdview ./work/local_build.sh
+$ cd bookmaker
+$ docker run --rm -v $(pwd):/work nuitsjp/mdview ./work/build.sh
 ```
+
+-v: ホストのディレクトリをコンテナにマウント
+イメージ名の後に実行コマンドを入力できる
 
 ---
 
+
+
+---
+
+# ユースケース2: ホストの環境を汚したくない
+
+```
+$ sudo docker run --rm -p 8080:8888 -v `pwd`:/home/jovyan/work jupyter/base-notebook
+```
+
+---
